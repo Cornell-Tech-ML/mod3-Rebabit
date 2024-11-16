@@ -84,14 +84,13 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     topo_order = []
 
     def dfs(v: Variable) -> None:
-        if v.unique_id in visited or v.is_constant:
+        if v.unique_id in visited:
             return
         visited.add(v.unique_id)
-        if not v.is_leaf():
+        if not v.is_constant():
             for parent in v.parents:
-                if not parent.is_constant():
-                    dfs(parent)
-        topo_order.append(v)
+                dfs(parent)
+            topo_order.append(v)
 
     dfs(variable)
     topo_order.reverse()  # use reverse instead of return Reverse(topo_order) to avoid exhaustion of iterator

@@ -169,8 +169,41 @@ def tensor_map(
         in_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        raise NotImplementedError("Need to implement for Task 3.1")
+        """Optimized tensor_map function using Numba.
 
+        Optimizations:
+        1. **Stride Alignment Check**: If `out` and `in_storage` are stride-aligned (same shape and strides),
+        they are treated as 1D arrays for direct element-wise mapping, reducing indexing overhead.
+        
+        2. **Parallel Execution**: Uses Numba’s `prange` for parallel processing, improving performance
+        for large tensors in both aligned and non-aligned cases.
+
+        3. **Efficient Indexing for Non-Aligned Tensors**: For non-aligned tensors, multi-dimensional
+        indexing with `to_index`, `broadcast_index`, and `index_to_position` maintains compatibility
+        across shapes, while benefiting from Numba's optimizations.
+        """
+        aligned = np.array_equal(out_strides, in_strides) and np.array_equal(out_shape, in_shape)
+        size = int(np.prod(out_shape))
+        if aligned:
+            for i in prange(len(out)):
+                out[i] = fn(in_storage[i])
+        else:
+            in_index = np.zeros(len(in_shape), dtype=np.int32) 
+            out_index = np.zeros(len(out_shape), dtype=np.int32)
+            for ordinal in prange(size):
+                to_index(ordinal, out_shape, out_index)
+                broadcast_index(out_index, out_shape, in_shape, in_index)
+                in_position = index_to_position(in_index, in_strides)
+                out_position = index_to_position(out_index, out_strides)
+                out[out_position] = fn(in_storage[in_position])
+        # in_index = np.zeros(len(in_shape), dtype=np.int32) 
+        # out_index = np.zeros(len(out_shape), dtype=np.int32)
+        # for i in range(len(out)):
+        #     to_index(i, out_shape, out_index)
+        #     broadcast_index(out_index, out_shape, in_shape, in_index)
+        #     o = index_to_position(out_index, out_strides)
+        #     j = index_to_position(in_index, in_strides)
+        #     out[o] = fn(in_storage[j])
     return njit(_map, parallel=True)  # type: ignore
 
 
@@ -209,8 +242,34 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        raise NotImplementedError("Need to implement for Task 3.1")
-
+        aligned = np.array_equal(out_strides, a_strides) and np.array_equal(a_strides, b_strides) and np.array_equal(out_shape, a_shape) and np.array_equal(a_shape, b_shape)
+        size = int(np.prod(out_shape))
+        if aligned:
+            for i in prange(len(out)):
+                out[i] = fn(a_storage[i], b_storage[i])
+        else:
+            a_index = np.zeros(len(a_shape), dtype=np.int32)
+            b_index = np.zeros(len(b_shape), dtype=np.int32)
+            out_index = np.zeros(len(out_shape), dtype=np.int32)
+            for ordinal in prange(size):
+                to_index(ordinal, out_shape, out_index)
+                broadcast_index(out_index, out_shape, a_shape, a_index)
+                broadcast_index(out_index, out_shape, b_shape, b_index)
+                a_position = index_to_position(a_index, a_strides)
+                b_position = index_to_position(b_index, b_strides)
+                out_position = index_to_position(out_index, out_strides)
+                out[out_position] = fn(a_storage[a_position], b_storage[b_position])
+        # out_index: Index = np.zeros(MAX_DIMS, np.int32)
+        # a_index: Index = np.zeros(MAX_DIMS, np.int32)
+        # b_index: Index = np.zeros(MAX_DIMS, np.int32)
+        # for i in range(len(out)):
+        #     to_index(i, out_shape, out_index)
+        #     o = index_to_position(out_index, out_strides)
+        #     broadcast_index(out_index, out_shape, a_shape, a_index)
+        #     j = index_to_position(a_index, a_strides)
+        #     broadcast_index(out_index, out_shape, b_shape, b_index)
+        #     k = index_to_position(b_index, b_strides)
+        #     out[o] = fn(a_storage[j], b_storage[k])
     return njit(_zip, parallel=True)  # type: ignore
 
 
@@ -245,7 +304,37 @@ def tensor_reduce(
         reduce_dim: int,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        raise NotImplementedError("Need to implement for Task 3.1")
+        """Optimized tensor_reduce function using Numba.
+
+        Optimizations:
+        1. **Parallel Main Loop**: The outer loop uses `prange` for parallel execution.
+        2. **Numpy Buffers for Indices**: Efficiently handles indexing with pre-computed strides.
+        3. **Position Increment in Inner Loop**: Avoids repeated `index_to_position` calls by
+        incrementing `a_position` directly along the reduction dimension.
+        """
+        a_index = np.zeros(len(a_shape), dtype=np.int32)
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
+        reduce_stride = a_strides[reduce_dim]
+        for ordinal in prange(int(np.prod(out_shape))):
+            to_index(ordinal, out_shape, out_index) 
+            for i in range(len(out_shape)): 
+                a_index[i] = out_index[i]
+            a_index[reduce_dim] = 0
+            a_position = index_to_position(a_index, a_strides)
+            result = a_storage[a_position]
+            for i in range(1, a_shape[reduce_dim]):
+                a_position += reduce_stride
+                result = fn(result, a_storage[int(a_position)])
+            out[ordinal] = result
+        # out_index: Index = np.zeros(MAX_DIMS, np.int32)
+        # reduce_size = a_shape[reduce_dim]
+        # for i in range(len(out)):
+        #     to_index(i, out_shape, out_index)
+        #     o = index_to_position(out_index, out_strides)
+        #     for s in range(reduce_size):
+        #         out_index[reduce_dim] = s
+        #         j = index_to_position(out_index, a_strides)
+        #         out[o] = fn(out[o], a_storage[j])
 
     return njit(_reduce, parallel=True)  # type: ignore
 

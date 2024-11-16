@@ -256,7 +256,8 @@ class Permute(Function):
         # use *dims for multiple args
         # order_list = order.to_numpy().astype(int).tolist()
         order_list = [int(order[i]) for i in range(order.size)]
-        ctx.save_for_backward(order_list)
+        ctx.save_for_backward(order)
+        print(f"Forward order_list: {order_list}")
         return t._new(
             t._tensor.permute(*order_list)
         )  # use the permute method from tensor_data.py, use _new to convert from TensorData to Tensor
@@ -266,9 +267,8 @@ class Permute(Function):
         """The gradient for the permute function is the inverse of the order."""
         (order,) = ctx.saved_values
         # Compute the inverse of the order  [2,1,3,0] -> [3 (as zero is permuted to the postion of 3),1,0,2]:
-        inv_order = [0] * len(order)
-        for i, o in enumerate(order):
-            inv_order[o] = i
+        inv_order = [a[0] for a in sorted(enumerate([order[i] for i in range(order.size)]), key=lambda a: a[1])]
+        print(f"Backward inv_order: {inv_order}")
         return grad_output._new(grad_output._tensor.permute(*inv_order)), 0.0
 
 

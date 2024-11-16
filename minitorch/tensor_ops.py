@@ -275,18 +275,13 @@ def tensor_map(
         # TODO: Implement for Task 2.3.
         in_index = np.zeros(
             len(in_shape), dtype=np.int32
-        )  # store the index for operations
+        )  
         out_index = np.zeros(len(out_shape), dtype=np.int32)
-        # Iterate over all elements in the **output tensor**, treating it as flattened (Handling Multi-Dimensional Tensors)
         for ordinal in range(int(operators.prod(out_shape))):
-            # Convert the flat index (ordinal) into a multi-dimensional index for the output tensor
             to_index(ordinal, out_shape, out_index)
-            # Map the output index to the input tensor, handling broadcasting if necessary
             broadcast_index(out_index, out_shape, in_shape, in_index)
-            # Convert the input and output indices to their positions in the storage arrays
             in_position = index_to_position(in_index, in_strides)
             out_position = index_to_position(out_index, out_strides)
-            # Apply the function to the input storage value and store it in the output storage
             out[out_position] = fn(in_storage[in_position])
 
     return _map

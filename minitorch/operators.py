@@ -102,10 +102,9 @@ def exp(x: float) -> float:
     """Return `e` raised to the power of `x`."""
     return math.exp(x)
 
-
 def inv(x: float) -> float:
     """Return the inverse of `x`."""
-    return 1.0 / x
+    return 1.0 / x if x != 0 else 0.0
 
 
 def log_back(x: float, y: float) -> float:
@@ -115,7 +114,7 @@ def log_back(x: float, y: float) -> float:
 
 def inv_back(x: float, y: float) -> float:
     """Computes the derivative of 1/`x` times `y`, i.e. -`y`/(`x`**2)."""
-    return -(1.0 / (x**2)) * y
+    return -(1.0 / (x**2)) * y if x != 0 else 0.0
 
 
 def relu_back(x: float, y: float) -> float:

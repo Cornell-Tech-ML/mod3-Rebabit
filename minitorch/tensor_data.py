@@ -67,9 +67,11 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
 
     """
     # TODO: Implement for Task 2.1.
-    for i in reversed(range(len(shape))):
-        out_index[i] = ordinal % shape[i]
-        ordinal = ordinal // shape[i]
+    cur_ord = ordinal + 0
+    for i in range(len(shape) - 1, -1, -1):
+        sh = shape[i]
+        out_index[i] = int(cur_ord % sh)
+        cur_ord = cur_ord // sh
 
 
 def broadcast_index(
@@ -276,9 +278,11 @@ class TensorData:
         ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
 
         # TODO: Implement for Task 2.1.
-        permuted_shape = tuple(self.shape[i] for i in order)
-        permuted_strides = tuple(self.strides[i] for i in order)
-        return TensorData(self._storage, permuted_shape, permuted_strides)
+        return TensorData(
+            self._storage,
+            tuple([self.shape[o] for o in order]),
+            tuple([self._strides[o] for o in order]),
+        )
 
     def to_string(self) -> str:
         """Convert to string"""

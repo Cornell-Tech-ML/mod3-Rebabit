@@ -308,12 +308,12 @@ class Tensor:
     @property
     def size(self) -> int:
         """Returns the total number of elements in the tensor."""
-        return int(operators.prod(self.shape))
+        return self._tensor.size
 
     @property
     def dims(self) -> int:
         """Returns the number of dimensions of the tensor."""
-        return len(self.shape)
+        return self._tensor.dims
 
     def __add__(self, b: TensorLike) -> Tensor:
         # use _ensure_tensor to make sure the input provided is converted to tensor for operation
@@ -373,10 +373,10 @@ class Tensor:
         """Returns the sum of the tensor."""
         if dim is None:
             return Sum.apply(
-                self.contiguous().view(int(operators.prod(self.shape))),
+                self.contiguous().view(self.size),
                 self._ensure_tensor(0),
-            )
-        return Sum.apply(self, Tensor.make([dim], (1,), backend=self.backend))
+            )   
+        return Sum.apply(self, self._ensure_tensor(dim))
 
     def mean(self, dim: Optional[int] = None) -> Tensor:
         """Returns the mean of the tensor."""
