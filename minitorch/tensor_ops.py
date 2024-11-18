@@ -391,5 +391,32 @@ def tensor_reduce(
 
     return _reduce
 
+def simple_tensor_matrix_multiply(
+    out: Storage,
+    out_shape: Shape,
+    out_strides: Strides,
+    a_storage: Storage,
+    a_shape: Shape,
+    a_strides: Strides,
+    b_storage: Storage,
+    b_shape: Shape,
+    b_strides: Strides,
+) -> None:
+    """Simplest version of matrix multiplication for debugging purposes."""
+    # Ensure inner dimensions match
+    assert a_shape[-1] == b_shape[-2], "Inner dimensions must match for matrix multiplication"
+
+    # Loop over the output batch, rows, and columns
+    for batch in range(out_shape[0]):  # Batch dimension
+        for i in range(out_shape[1]):  # Rows of output
+            for j in range(out_shape[2]):  # Columns of output
+                out_idx = batch * out_strides[0] + i * out_strides[1] + j * out_strides[2]
+                out[out_idx] = 0.0
+                for k in range(a_shape[-1]):  # Inner dimension
+                    # Calculate indices for a and b
+                    a_idx = batch * a_strides[0] + i * a_strides[1] + k * a_strides[2]
+                    b_idx = batch * b_strides[0] + k * b_strides[1] + j * b_strides[2]
+                    out[out_idx] += a_storage[a_idx] * b_storage[b_idx]
+
 
 SimpleBackend = TensorBackend(SimpleOps)

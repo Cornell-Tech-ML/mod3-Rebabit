@@ -315,26 +315,21 @@ def tensor_reduce(
         a_index = np.zeros(len(a_shape), dtype=np.int32)
         out_index = np.zeros(len(out_shape), dtype=np.int32)
         reduce_stride = a_strides[reduce_dim]
-        for ordinal in prange(int(np.prod(out_shape))):
+        reduce_size = a_shape[reduce_dim]
+        size = 1
+        for dim in out_shape:
+            size *= dim
+        for ordinal in prange(size):
             to_index(ordinal, out_shape, out_index) 
             for i in range(len(out_shape)): 
                 a_index[i] = out_index[i]
             a_index[reduce_dim] = 0
             a_position = index_to_position(a_index, a_strides)
             result = a_storage[a_position]
-            for i in range(1, a_shape[reduce_dim]):
+            for i in range(1, reduce_size):
                 a_position += reduce_stride
                 result = fn(result, a_storage[int(a_position)])
             out[ordinal] = result
-        # out_index: Index = np.zeros(MAX_DIMS, np.int32)
-        # reduce_size = a_shape[reduce_dim]
-        # for i in range(len(out)):
-        #     to_index(i, out_shape, out_index)
-        #     o = index_to_position(out_index, out_strides)
-        #     for s in range(reduce_size):
-        #         out_index[reduce_dim] = s
-        #         j = index_to_position(out_index, a_strides)
-        #         out[o] = fn(out[o], a_storage[j])
 
     return njit(_reduce, parallel=True)  # type: ignore
 
@@ -384,9 +379,30 @@ def _tensor_matrix_multiply(
     """
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
+    out_batch_stride = out_strides[0] if out_shape[0] > 1 else 0
 
-    # TODO: Implement for Task 3.2.
-    raise NotImplementedError("Need to implement for Task 3.2")
+    # Extract dimensions
+    batch_size = out_shape[0]
+    out_rows = out_shape[1]
+    out_cols = out_shape[2]
+    inner_dim = a_shape[-1]
+
+    # Parallelize outer loop over batches and rows
+    for batch in prange(batch_size):
+        a_batch_offset = batch * a_batch_stride
+        b_batch_offset = batch * b_batch_stride
+        out_batch_offset = batch * out_batch_stride
+
+        for i in range(out_rows):
+            for j in range(out_cols):
+                result = 0.0
+                for k in range(inner_dim):
+                    a_idx = a_batch_offset + i * a_strides[1] + k * a_strides[2]
+                    b_idx = b_batch_offset + k * b_strides[1] + j * b_strides[2]
+                    result += a_storage[a_idx] * b_storage[b_idx]
+
+                out_idx = out_batch_offset + i * out_strides[1] + j * out_strides[2]
+                out[out_idx] = result
 
 
 tensor_matrix_multiply = njit(_tensor_matrix_multiply, parallel=True)
