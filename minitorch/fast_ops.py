@@ -394,14 +394,17 @@ def _tensor_matrix_multiply(
         out_batch_offset = batch * out_batch_stride
 
         for i in range(out_rows):
+            a_row_offset = a_batch_offset + i * a_strides[1]
+            out_row_offset = out_batch_offset + i * out_strides[1]
             for j in range(out_cols):
                 result = 0.0
+                b_column_offset = b_batch_offset + j * b_strides[2]
                 for k in range(inner_dim):
-                    a_idx = a_batch_offset + i * a_strides[1] + k * a_strides[2]
-                    b_idx = b_batch_offset + k * b_strides[1] + j * b_strides[2]
+                    a_idx = a_row_offset + k * a_strides[2]
+                    b_idx = k * b_strides[1] + b_column_offset
                     result += a_storage[a_idx] * b_storage[b_idx]
 
-                out_idx = out_batch_offset + i * out_strides[1] + j * out_strides[2]
+                out_idx = out_row_offset + j * out_strides[2]
                 out[out_idx] = result
 
 
