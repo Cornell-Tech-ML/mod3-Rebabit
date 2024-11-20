@@ -368,6 +368,7 @@ def tensor_reduce(
             cur = thread_idx + BLOCK_DIM * block_idx
             if cur < a_shape[reduce_dim]:
                 out_index[reduce_dim] = cur
+                out_pos = index_to_position(out_index, out_strides)
                 a_position = index_to_position(out_index, a_strides)
                 cache[thread_idx] = a_storage[a_position]
                 cuda.syncthreads()
@@ -382,8 +383,6 @@ def tensor_reduce(
 
                 # 3. Write the result from each block back to the output
                 if thread_idx == 0:
-                    to_index(block_idx, out_shape, out_index)
-                    out_pos = index_to_position(out_index, out_strides)
                     out[out_pos] = cache[0]
 
     return jit(_reduce)  # type: ignore
@@ -419,7 +418,7 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
         b (Storage): storage for `b` tensor.
         size (int): size of the square
 
-    """
+    """  # noqa: D404
     BLOCK_DIM = 32
     # TODO: Implement for Task 3.3.
     raise NotImplementedError("Need to implement for Task 3.3")
