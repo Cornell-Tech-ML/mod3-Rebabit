@@ -298,11 +298,6 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     cuda.syncthreads()
 
     # Reduction within the block.
-    # e.g. 
-    # [1, 2, 3, 4, 5, 6, 7]
-    # [1 + 2, 3 + 4, 5 + 6, 7 + 0] 
-    # [1 + 2 + 3 + 4, 5 + 6 + 7 + 0] 
-    # [1 + 2 + 3 + 4 + 5 + 6 + 7 + 0]
     if i < size:
         stride = 1
         while stride < BLOCK_DIM:
@@ -365,8 +360,8 @@ def tensor_reduce(
         thread_idx = cuda.threadIdx.x
         cache[thread_idx] = reduce_value
 
-        # 1. Load values into shared memory
         if block_idx < out_size:
+            # 1. Load values into shared memory
             to_index(block_idx, out_shape, out_index)
             # a_index = out_index.copy()
             # Calculate the position in the input tensor for this thread
