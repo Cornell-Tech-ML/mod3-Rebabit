@@ -318,13 +318,7 @@ def test_two_grad_broadcast(
     t1, t2 = data.draw(shaped_tensors(2, backend=shared[backend]))
     name, base_fn, tensor_fn = fn
 
-    # try:
     grad_check(tensor_fn, t1, t2)
-    # except AssertionError as e:
-    #     print(f"t1: {t1.shape}, t2: {t2.shape}")
-    #     print(f"t1 values: {t1}")
-    #     print(f"t2 values: {t2}")
-    #     raise e
 
     # broadcast check
     grad_check(tensor_fn, t1.sum(0), t2)

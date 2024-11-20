@@ -281,19 +281,20 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     """  # noqa: D404
     BLOCK_DIM = 32
 
+    # each block has a cache of size BLOCK_DIM, shared across all threads in the block
     cache = cuda.shared.array(BLOCK_DIM, numba.float64)
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    pos = cuda.threadIdx.x
-    out_pos = cuda.blockIdx.x
+    thread_idx = cuda.threadIdx.x
+    block_idx = cuda.blockIdx.x
 
     # TODO: Implement for Task 3.3.
     # Load the input value into shared memory (cache).
     # If the global index is within bounds, copy the corresponding input value.
     # Otherwise, set the value to 0 to handle padding for threads beyond the input size.
     if i < size:
-        cache[pos] = a[i]
+        cache[thread_idx] = a[i]
     else:
-        cache[pos] = 0.0 # padding with zeros
+        cache[thread_idx] = 0.0 # padding with zeros
     cuda.syncthreads()
 
     # Reduction within the block.
@@ -305,13 +306,13 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     if i < size:
         stride = 1
         while stride < BLOCK_DIM:
-            if pos % (2 * stride) == 0:
-                cache[pos] += cache[pos + stride]
+            if thread_idx % (2 * stride) == 0:
+                cache[thread_idx] += cache[thread_idx + stride]
             cuda.syncthreads()
             stride *= 2
 
-        if pos == 0:
-            out[out_pos] = cache[0]
+        if thread_idx == 0:
+            out[block_idx] = cache[0]
 
 jit_sum_practice = cuda.jit()(_sum_practice)
 
