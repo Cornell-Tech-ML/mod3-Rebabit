@@ -359,6 +359,7 @@ def _tensor_matrix_multiply(
         None : Fills in `out`
 
     """
+    # TODO: Implement for Task 3.2.
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
     out_batch_stride = out_strides[0] if out_shape[0] > 1 else 0

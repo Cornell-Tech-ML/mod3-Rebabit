@@ -281,12 +281,13 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     cache = cuda.shared.array(BLOCK_DIM, numba.float64)
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     pos = cuda.threadIdx.x
+    out_pos = cuda.blockIdx.x
 
     # TODO: Implement for Task 3.3.
     if i < size:
         cache[pos] = a[i]
     else:
-        cache[pos] = 0.0
+        cache[pos] = 0.0 # padding with zeros
     cuda.syncthreads()
 
     stride = 1
@@ -297,7 +298,7 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
         stride *= 2
 
     if pos == 0:
-        out[cuda.blockIdx.x] = cache[0]
+        out[out_pos] = cache[0]
 
 jit_sum_practice = cuda.jit()(_sum_practice)
 
@@ -343,11 +344,38 @@ def tensor_reduce(
         BLOCK_DIM = 1024
         cache = cuda.shared.array(BLOCK_DIM, numba.float64)
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
+        a_index = cuda.local.array(MAX_DIMS, numba.int32)
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
 
         # TODO: Implement for Task 3.3.
-        raise NotImplementedError("Need to implement for Task 3.3")
+        i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+        if i < out_size:
+            to_index(i, out_shape, out_index)
+            for i in range(len(out_shape)): 
+                a_index[i] = out_index[i]
+            a_index[reduce_dim] = 0
+            a_position = index_to_position(a_index, a_strides)
+            cache[pos] = a_storage[a_position]
+            for k in range(1, a_shape[reduce_dim]):
+                a_position += a_strides[reduce_dim]
+                cache[pos] = fn(cache[pos], a_storage[a_position])
+        else:
+            cache[pos] = reduce_value
+        cuda.syncthreads()
+
+        # Perform reduction within the block using shared memory
+        stride = 1
+        while stride < BLOCK_DIM:
+            if pos % (2 * stride) == 0 and pos + stride < BLOCK_DIM:
+                cache[pos] = fn(cache[pos], cache[pos + stride])
+            cuda.syncthreads()
+            stride *= 2
+
+        # Write the result from each block back to the output
+        if pos == 0 and i < out_size:
+            out_pos = index_to_position(out_index, out_strides)
+            out[out_pos] = cache[0]
 
     return jit(_reduce)  # type: ignore
 
