@@ -359,20 +359,20 @@ def tensor_reduce(
                 out_index[reduce_dim] = thread_idx + BLOCK_DIM * block_idx
                 a_position = index_to_position(out_index, a_strides)
                 cache[thread_idx] = a_storage[a_position]
-        cuda.syncthreads()
-
-        # Perform reduction within the block using shared memory
-        stride = 1
-        while stride < BLOCK_DIM:
-            if thread_idx % (2 * stride) == 0 and thread_idx + stride < BLOCK_DIM:
-                cache[thread_idx] = fn(cache[thread_idx], cache[thread_idx + stride])
             cuda.syncthreads()
-            stride *= 2
 
-        # Write the result from each block back to the output
-        if thread_idx == 0 and block_idx < out_size:
-            out_pos = index_to_position(out_index, out_strides)
-            out[out_pos] = cache[0]
+            # Perform reduction within the block using shared memory
+            stride = 1
+            while stride < BLOCK_DIM:
+                if thread_idx % (2 * stride) == 0 and thread_idx + stride < BLOCK_DIM:
+                    cache[thread_idx] = fn(cache[thread_idx], cache[thread_idx + stride])
+                cuda.syncthreads()
+                stride *= 2
+
+            # Write the result from each block back to the output
+            if thread_idx == 0 and block_idx < out_size:
+                out_pos = index_to_position(out_index, out_strides)
+                out[out_pos] = cache[0]
 
     return jit(_reduce)  # type: ignore
 
