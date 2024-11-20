@@ -74,15 +74,15 @@ def max(x: float, y: float) -> float:
 
 def is_close(x: float, y: float) -> float:
     """Check if `x` is within 1e-2 of `y`."""
-    return abs(x - y) < 1e-2
+    return (x - y) < 1e-2 and (y-x) < 1e-2
 
 
 def sigmoid(x: float) -> float:
     """Return the sigmoid of `x`."""
     if x >= 0:
-        return 1.0 / (1.0 + exp(-x))
+        return 1.0 / (1.0 + math.exp(-x))
     else:
-        return exp(x) / (1.0 + exp(x))
+        return math.exp(x) / (1.0 + math.exp(x))
 
 
 def relu(x: float) -> float:
@@ -104,7 +104,7 @@ def exp(x: float) -> float:
 
 def inv(x: float) -> float:
     """Return the inverse of `x`."""
-    return 1.0 / x if x != 0 else 0.0
+    return 1.0 / x
 
 
 def log_back(x: float, y: float) -> float:
@@ -114,7 +114,7 @@ def log_back(x: float, y: float) -> float:
 
 def inv_back(x: float, y: float) -> float:
     """Computes the derivative of 1/`x` times `y`, i.e. -`y`/(`x`**2)."""
-    return -(1.0 / (x**2)) * y if x != 0 else 0.0
+    return -(1.0 / (x**2)) * y
 
 
 def relu_back(x: float, y: float) -> float:

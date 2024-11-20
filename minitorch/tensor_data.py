@@ -98,12 +98,13 @@ def broadcast_index(
     # TODO: Implement for Task 2.2.
     # This function converts an index from the “broadcasted” (larger) tensor’s shape into an index that works for the smaller tensor’s shape.
     dim_offset = len(big_shape) - len(shape)
-    for i in range(len(shape)):
+    for i, s in enumerate(shape):
         # If a dimension in shape is 1, then it is broadcastable. This means that dimension should always return an index of 0, as the entire dimension had been “stretched” to match the larger tensor.
-        if shape[i] == 1:
-            out_index[i] = 0
-        else:
+        if s > 1:
             out_index[i] = big_index[i + dim_offset]
+        else:
+            out_index[i] = 0
+    return None
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
