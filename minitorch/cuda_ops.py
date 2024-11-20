@@ -363,12 +363,12 @@ def tensor_reduce(
         if block_idx < out_size:
             # 1. Load values into shared memory
             to_index(block_idx, out_shape, out_index)
+            out_pos = index_to_position(out_index, out_strides)
             # a_index = out_index.copy()
             # Calculate the position in the input tensor for this thread
             cur = thread_idx + BLOCK_DIM * block_idx
             if cur < a_shape[reduce_dim]:
                 out_index[reduce_dim] = cur
-                out_pos = index_to_position(out_index, out_strides)
                 a_position = index_to_position(out_index, a_strides)
                 cache[thread_idx] = a_storage[a_position]
                 cuda.syncthreads()
