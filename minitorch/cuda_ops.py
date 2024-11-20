@@ -177,21 +177,21 @@ def tensor_map(
         if i >= out_size:
             return
         
-        aligned = (out_strides == in_strides and out_shape == in_shape)
+        # aligned = (out_strides == in_strides and out_shape == in_shape)
 
-        if aligned:
-            out[i] = fn(in_storage[i])
-        else:
-            out_index = cuda.local.array(MAX_DIMS, numba.int32)
-            in_index = cuda.local.array(MAX_DIMS, numba.int32)
-            # Convert the flat index `i` to a multi-dimensional index for the output tensor
-            to_index(i, out_shape, out_index)
-            # Broadcast the output index to match the input tensor's shape
-            broadcast_index(out_index, out_shape, in_shape, in_index)
-            # Convert the multi-dimensional indices into flat storage positions.
-            in_position = index_to_position(in_index, in_strides)
-            out_position = index_to_position(out_index, out_strides)
-            out[out_position] = fn(in_storage[in_position])
+        # if aligned:
+        #     out[i] = fn(in_storage[i])
+        # else:
+        out_index = cuda.local.array(MAX_DIMS, numba.int32)
+        in_index = cuda.local.array(MAX_DIMS, numba.int32)
+        # Convert the flat index `i` to a multi-dimensional index for the output tensor
+        to_index(i, out_shape, out_index)
+        # Broadcast the output index to match the input tensor's shape
+        broadcast_index(out_index, out_shape, in_shape, in_index)
+        # Convert the multi-dimensional indices into flat storage positions.
+        in_position = index_to_position(in_index, in_strides)
+        out_position = index_to_position(out_index, out_strides)
+        out[out_position] = fn(in_storage[in_position])
 
     return cuda.jit()(_map)  # type: ignore
 
@@ -234,26 +234,26 @@ def tensor_zip(
         if i >= out_size:
             return
         
-        aligned = (
-            out_strides == a_strides
-            and a_strides == b_strides
-            and out_shape == a_shape
-            and a_shape == b_shape
-        )
+        # aligned = (
+        #     out_strides == a_strides
+        #     and a_strides == b_strides
+        #     and out_shape == a_shape
+        #     and a_shape == b_shape
+        # )
 
-        if aligned:
-            out[i] = fn(a_storage[i], b_storage[i])
-        else:
-            out_index = cuda.local.array(MAX_DIMS, numba.int32)
-            a_index = cuda.local.array(MAX_DIMS, numba.int32)
-            b_index = cuda.local.array(MAX_DIMS, numba.int32)
-            to_index(i, out_shape, out_index)
-            broadcast_index(out_index, out_shape, a_shape, a_index)
-            broadcast_index(out_index, out_shape, b_shape, b_index)
-            a_position = index_to_position(a_index, a_strides)
-            b_position = index_to_position(b_index, b_strides)
-            out_position = index_to_position(out_index, out_strides)
-            out[out_position] = fn(a_storage[a_position], b_storage[b_position])
+        # if aligned:
+        #     out[i] = fn(a_storage[i], b_storage[i])
+        # else:
+        out_index = cuda.local.array(MAX_DIMS, numba.int32)
+        a_index = cuda.local.array(MAX_DIMS, numba.int32)
+        b_index = cuda.local.array(MAX_DIMS, numba.int32)
+        to_index(i, out_shape, out_index)
+        broadcast_index(out_index, out_shape, a_shape, a_index)
+        broadcast_index(out_index, out_shape, b_shape, b_index)
+        a_position = index_to_position(a_index, a_strides)
+        b_position = index_to_position(b_index, b_strides)
+        out_position = index_to_position(out_index, out_strides)
+        out[out_position] = fn(a_storage[a_position], b_storage[b_position])
 
     return cuda.jit()(_zip)  # type: ignore
 
@@ -299,7 +299,7 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     # Reduction within the block.
     stride = 1
     while stride < BLOCK_DIM:
-        if pos % (2 * stride) == 0 and pos + stride < BLOCK_DIM:
+        if pos % (2 * stride) == 0:
             cache[pos] += cache[pos + stride]
         cuda.syncthreads()
         stride *= 2
@@ -373,7 +373,7 @@ def tensor_reduce(
             # 2. Perform reduction within the block using shared memory
             stride = 1
             while stride < BLOCK_DIM:
-                if thread_idx % (2 * stride) == 0 and thread_idx + stride < BLOCK_DIM:
+                if thread_idx % (2 * stride) == 0:
                     cache[thread_idx] = fn(cache[thread_idx], cache[thread_idx + stride])
                 cuda.syncthreads()
                 stride *= 2
