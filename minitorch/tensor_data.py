@@ -125,23 +125,23 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
 
     """
     # TODO: Implement for Task 2.2.
-    shape1, shape2 = tuple(shape1), tuple(shape2)
-    len1, len2 = len(shape1), len(shape2)
-    if len1 < len2:
-        shape1 = (1,) * (len2 - len1) + shape1
-    else:
-        shape2 = (1,) * (len1 - len2) + shape2
-    broadcasted_shape = []
-    for dim1, dim2 in zip(shape1, shape2):
-        if dim1 == dim2:
-            broadcasted_shape.append(dim1)
-        elif dim1 == 1:
-            broadcasted_shape.append(dim2)
-        elif dim2 == 1:
-            broadcasted_shape.append(dim1)
+    a, b = shape1, shape2
+    m = max(len(a), len(b))
+    c_rev = [0] * m
+    a_rev = list(reversed(a))
+    b_rev = list(reversed(b))
+    for i in range(m):
+        if i >= len(a):
+            c_rev[i] = b_rev[i]
+        elif i >= len(b):
+            c_rev[i] = a_rev[i]
         else:
-            raise IndexingError(f"Shapes {shape1} and {shape2} are not broadcastable.")
-    return tuple(broadcasted_shape)
+            c_rev[i] = max(a_rev[i], b_rev[i])
+            if a_rev[i] != c_rev[i] and a_rev[i] != 1:
+                raise IndexingError(f"Broadcast failure {a} {b}")
+            if b_rev[i] != c_rev[i] and b_rev[i] != 1:
+                raise IndexingError(f"Broadcast failure {a} {b}")
+    return tuple(reversed(c_rev))
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
