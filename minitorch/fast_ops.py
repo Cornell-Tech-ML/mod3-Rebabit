@@ -182,15 +182,14 @@ def tensor_map(
         indexing with `to_index`, `broadcast_index`, and `index_to_position` maintains compatibility
         across shapes, while benefiting from Numba's optimizations.
         """
+        in_index = np.zeros(len(in_shape), dtype=np.int32) 
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
         aligned = np.array_equal(out_strides, in_strides) and np.array_equal(out_shape, in_shape)
-        size = int(np.prod(out_shape))
         if aligned:
             for i in prange(len(out)):
                 out[i] = fn(in_storage[i])
         else:
-            for ordinal in prange(size):
-                in_index = np.zeros(len(in_shape), dtype=np.int32) 
-                out_index = np.zeros(len(out_shape), dtype=np.int32)
+            for ordinal in prange(len(out)):
                 to_index(ordinal, out_shape, out_index)
                 broadcast_index(out_index, out_shape, in_shape, in_index)
                 in_position = index_to_position(in_index, in_strides)
@@ -234,16 +233,15 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
+        a_index = np.zeros(len(a_shape), dtype=np.int32)
+        b_index = np.zeros(len(b_shape), dtype=np.int32)
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
         aligned = np.array_equal(out_strides, a_strides) and np.array_equal(a_strides, b_strides) and np.array_equal(out_shape, a_shape) and np.array_equal(a_shape, b_shape)
-        size = int(np.prod(out_shape))
         if aligned:
             for i in prange(len(out)):
                 out[i] = fn(a_storage[i], b_storage[i])
         else:
-            for ordinal in prange(size):
-                a_index = np.zeros(len(a_shape), dtype=np.int32)
-                b_index = np.zeros(len(b_shape), dtype=np.int32)
-                out_index = np.zeros(len(out_shape), dtype=np.int32)
+            for ordinal in prange(len(out)):
                 to_index(ordinal, out_shape, out_index)
                 broadcast_index(out_index, out_shape, a_shape, a_index)
                 broadcast_index(out_index, out_shape, b_shape, b_index)
@@ -294,14 +292,12 @@ def tensor_reduce(
         3. **Position Increment in Inner Loop**: Avoids repeated `index_to_position` calls by
         incrementing `a_position` directly along the reduction dimension.
         """
-        size = 1
+        a_index = np.zeros(len(a_shape), dtype=np.int32)
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
+
         reduce_stride = a_strides[reduce_dim]
         reduce_size = a_shape[reduce_dim]
-        for dim in out_shape:
-            size *= dim
-        for ordinal in prange(size):
-            a_index = np.zeros(len(a_shape), dtype=np.int32)
-            out_index = np.zeros(len(out_shape), dtype=np.int32)
+        for ordinal in prange(len(out)):
             to_index(ordinal, out_shape, out_index) 
             for i in range(len(out_shape)): 
                 a_index[i] = out_index[i]
