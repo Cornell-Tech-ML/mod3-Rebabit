@@ -520,7 +520,7 @@ def _tensor_matrix_multiply(
     acc = 0.0
 
     # Loop through tiles
-    for tile in range(0, (a_shape[2] + BLOCK_DIM - 1) // BLOCK_DIM):
+    for tile in range(0, (a_shape[2] + BLOCK_DIM - 1) // BLOCK_DIM): # calculate ⌈a_shape[−1] / BLOCK_DIM⌉
         # Load A into shared memory
         if i < a_shape[1] and tile * BLOCK_DIM + pj < a_shape[2]:
             a_shared[pi, pj] = a_storage[batch * a_batch_stride +
@@ -542,7 +542,8 @@ def _tensor_matrix_multiply(
 
         # Compute partial dot product
         for k in range(BLOCK_DIM):
-            acc += a_shared[pi, k] * b_shared[k, pj]
+            if tile * BLOCK_DIM + k < a_shape[2] and tile * BLOCK_DIM + k < b_shape[1]:
+                acc += a_shared[pi, k] * b_shared[k, pj]
 
         # Synchronize threads before loading the next tile
         cuda.syncthreads()
