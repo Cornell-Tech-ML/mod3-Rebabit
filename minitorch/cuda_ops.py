@@ -557,6 +557,4 @@ def _tensor_matrix_multiply(
             i * out_strides[1] +
             j * out_strides[2]] = acc
     
-
-
 tensor_matrix_multiply = jit(_tensor_matrix_multiply)
