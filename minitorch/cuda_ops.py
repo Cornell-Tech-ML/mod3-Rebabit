@@ -421,19 +421,19 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
         size (int): size of the square
 
     """  # noqa: D404
-    BLOCK_DIM = 32
+    BLOCK_DIM = 32 # matrix size is always less than block dim -> only one block needed
     # TODO: Implement for Task 3.3.
-    # Shared memory for matrix A and B
+    # Create shared memory for a and b (shared across all threads in the block)
     shared_a = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), dtype=numba.float32)
     shared_b = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), dtype=numba.float32)
 
-    # Thread and block indices
+    # Local Position in the block (same as global position as we only have one block)
     i = cuda.threadIdx.x
     j = cuda.threadIdx.y
 
-    # Check bounds (ensure threads operate within the matrix size)
+    # Ensure threads operate within the matrix size
     if i < size and j < size:
-        # Load elements from global memory into shared memory
+        # Global Reads: load elements from a and b into shared memory
         shared_a[i, j] = a[i * size + j]
         shared_b[i, j] = b[i * size + j]
 
@@ -443,11 +443,12 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
     # Compute the dot product for the result matrix
     if i < size and j < size:
         temp = 0.0
-        # out[i, j] += a[i, k] * b[k, j]
+        # Multiply the corresponding elements of the row of `a` and the column of `b`
+        # i.e. out[i, j] += a[i, k] * b[k, j]
         for k in range(size):
             temp += shared_a[i, k] * shared_b[k, j]
 
-        # Write the result to global memory
+        # Global Write: write the result
         out[i * size + j] = temp
 
 jit_mm_practice = jit(_mm_practice)
@@ -516,39 +517,41 @@ def _tensor_matrix_multiply(
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
     # TODO: Implement for Task 3.4.
+
     # Initialize accumulator
     acc = 0.0
 
-    # Loop through tiles
-    for tile in range(0, (a_shape[2] + BLOCK_DIM - 1) // BLOCK_DIM): # calculate ⌈a_shape[−1] / BLOCK_DIM⌉
-        # Load A into shared memory
+    # Loop through tiles along the k
+    # We can only load part of a[i, k], b[k, j] due to shared memory size
+    # Total tiles: ⌈a_shape[-1] / BLOCK_DIM⌉ or ⌈b_shape[-2] / BLOCK_DIM⌉
+    for tile in range(0, (a_shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM): 
+        # Load from a[batch, i, tile * BLOCK_DIM] to a[batch, i, (tile + 1) * BLOCK_DIM]
+        # a_shared[pi, pj] = a[batch, i, tile * BLOCK_DIM + pj]
+        # Use guard to handle out-of-bound indices
         if i < a_shape[1] and tile * BLOCK_DIM + pj < a_shape[2]:
             a_shared[pi, pj] = a_storage[batch * a_batch_stride +
                                          i * a_strides[1] +
                                          (tile * BLOCK_DIM + pj) * a_strides[2]]
-        else:
-            a_shared[pi, pj] = 0.0
 
-        # Load B into shared memory
+        # Load from b[batch, tile * BLOCK_DIM, j] to b[batch, (tile + 1) * BLOCK_DIM, j]
+        # b_shared[pi, pj] = b[batch, tile * BLOCK_DIM + pi, j]
+        # Use guard to handle out-of-bound indices
         if j < b_shape[2] and tile * BLOCK_DIM + pi < b_shape[1]:
             b_shared[pi, pj] = b_storage[batch * b_batch_stride +
                                          (tile * BLOCK_DIM + pi) * b_strides[1] +
                                          j * b_strides[2]]
-        else:
-            b_shared[pi, pj] = 0.0
 
         # Synchronize threads within the block
         cuda.syncthreads()
 
         # Compute partial dot product
         for k in range(BLOCK_DIM):
-            if tile * BLOCK_DIM + k < a_shape[2] and tile * BLOCK_DIM + k < b_shape[1]:
+            # In case k is out of bounds
+            if tile * BLOCK_DIM + k < a_shape[-1]:
                 acc += a_shared[pi, k] * b_shared[k, pj]
 
-        # Synchronize threads before loading the next tile
-        cuda.syncthreads()
-
     # Write the result to global memory
+    # Check bounds before each read/write
     if i < out_shape[1] and j < out_shape[2]:
         out[batch * out_strides[0] +
             i * out_strides[1] +
