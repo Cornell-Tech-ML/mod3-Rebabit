@@ -119,9 +119,9 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
     # print(f"derivative map: {derivative_map}, topological order: {topo_order}")
     # perform backpropagation in topological order
     for var in topo_order:
-        print(
-            f"Backpropagating through variable {var.unique_id} with gradient {derivative_map[var.unique_id]}"
-        )
+        # print(
+        #     f"Backpropagating through variable {var.unique_id} with gradient {derivative_map[var.unique_id]}"
+        # )
         if var.is_leaf():
             # print(f"Accumulating derivative for leaf node {var.unique_id}: {d_output}")
             d_output = derivative_map[var.unique_id]
