@@ -41,7 +41,7 @@ def evaluate_performance():
         # Store average time for each backend
         timings["CPU"].append(np.mean(cpu_durations))
         timings["GPU"].append(np.mean(gpu_durations))
-        print(dim, ":", timings["CPU"][-1], timings["GPU"][-1])
+        print(dim, ":", " CPU: ",timings["CPU"][-1], "GPU: ", timings["GPU"][-1])
 
     return dimensions, timings
 
