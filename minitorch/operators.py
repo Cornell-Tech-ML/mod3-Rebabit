@@ -74,7 +74,7 @@ def max(x: float, y: float) -> float:
 
 def is_close(x: float, y: float) -> float:
     """Check if `x` is within 1e-2 of `y`."""
-    return (x - y) < 1e-2 and (y-x) < 1e-2
+    return (x - y) < 1e-2 and (y - x) < 1e-2
 
 
 def sigmoid(x: float) -> float:
@@ -101,6 +101,7 @@ def log(x: float) -> float:
 def exp(x: float) -> float:
     """Return `e` raised to the power of `x`."""
     return math.exp(x)
+
 
 def inv(x: float) -> float:
     """Return the inverse of `x`."""

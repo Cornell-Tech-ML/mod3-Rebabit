@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from typing import Callable, Optional
 
     from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from .tensor_data import Shape, Storage, Strides
 
 # TIP: Use `NUMBA_DISABLE_JIT=1 pytest tests/ -m task3_1` to run these tests without JIT.
 
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 Fn = TypeVar("Fn")
 
 
-def njit(fn: Fn, **kwargs: Any) -> Fn:
+def njit(fn: Fn, **kwargs: Any) -> Fn:  # noqa: D103
     return _njit(inline="always", **kwargs)(fn)  # type: ignore
 
 
@@ -174,7 +174,7 @@ def tensor_map(
         Optimizations:
         1. **Stride Alignment Check**: If `out` and `in_storage` are stride-aligned (same shape and strides),
         they are treated as 1D arrays for direct element-wise mapping, reducing indexing overhead.
-        
+
         2. **Parallel Execution**: Uses Numba’s `prange` for parallel processing, improving performance
         for large tensors in both aligned and non-aligned cases.
 
@@ -182,20 +182,25 @@ def tensor_map(
         indexing with `to_index`, `broadcast_index`, and `index_to_position` maintains compatibility
         across shapes, while benefiting from Numba's optimizations.
         """
-        aligned = np.array_equal(out_strides, in_strides) and np.array_equal(out_shape, in_shape)
+        aligned = np.array_equal(out_strides, in_strides) and np.array_equal(
+            out_shape, in_shape
+        )
         if aligned:
             for i in prange(len(out)):
                 out[i] = fn(in_storage[i])
         else:
             for ordinal in prange(len(out)):
                 # initialize index buffers within the loop
-                in_index = np.empty(MAX_DIMS, dtype=np.int32)  # use np.empty instead of np.zeros
+                in_index = np.empty(
+                    MAX_DIMS, dtype=np.int32
+                )  # use np.empty instead of np.zeros
                 out_index = np.empty(MAX_DIMS, dtype=np.int32)
                 to_index(ordinal, out_shape, out_index)
                 broadcast_index(out_index, out_shape, in_shape, in_index)
                 in_position = index_to_position(in_index, in_strides)
                 out_position = index_to_position(out_index, out_strides)
                 out[out_position] = fn(in_storage[in_position])
+
     return njit(_map, parallel=True)  # type: ignore
 
 
@@ -234,7 +239,12 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        aligned = np.array_equal(out_strides, a_strides) and np.array_equal(a_strides, b_strides) and np.array_equal(out_shape, a_shape) and np.array_equal(a_shape, b_shape)
+        aligned = (
+            np.array_equal(out_strides, a_strides)
+            and np.array_equal(a_strides, b_strides)
+            and np.array_equal(out_shape, a_shape)
+            and np.array_equal(a_shape, b_shape)
+        )
         if aligned:
             for i in prange(len(out)):
                 out[i] = fn(a_storage[i], b_storage[i])
@@ -250,7 +260,7 @@ def tensor_zip(
                 b_position = index_to_position(b_index, b_strides)
                 out_position = index_to_position(out_index, out_strides)
                 out[out_position] = fn(a_storage[a_position], b_storage[b_position])
-        
+
     return njit(_zip, parallel=True)  # type: ignore
 
 
@@ -298,8 +308,8 @@ def tensor_reduce(
         for ordinal in prange(len(out)):
             a_index = np.empty(MAX_DIMS, dtype=np.int32)
             out_index = np.empty(MAX_DIMS, dtype=np.int32)
-            to_index(ordinal, out_shape, out_index) 
-            for i in range(len(out_shape)): 
+            to_index(ordinal, out_shape, out_index)
+            for i in range(len(out_shape)):
                 a_index[i] = out_index[i]
             a_index[reduce_dim] = 0
             a_position = index_to_position(a_index, a_strides)

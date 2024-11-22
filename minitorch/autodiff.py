@@ -96,6 +96,7 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     topo_order.reverse()  # use reverse instead of return Reverse(topo_order) to avoid exhaustion of iterator
     return topo_order
 
+
 def backpropagate(variable: Variable, deriv: Any) -> None:
     """Runs backpropagation on the computation graph in order to
     compute derivatives for the leave nodes.

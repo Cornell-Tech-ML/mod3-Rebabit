@@ -217,6 +217,7 @@ class Sum(Function):
         # else:
         #     return grad_output.f.id_map(grad_output, t), None
 
+
 class LT(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
@@ -266,7 +267,12 @@ class Permute(Function):
         """The gradient for the permute function is the inverse of the order."""
         (order,) = ctx.saved_values
         # Compute the inverse of the order  [2,1,3,0] -> [3 (as zero is permuted to the postion of 3),1,0,2]:
-        inv_order = [a[0] for a in sorted(enumerate([order[i] for i in range(order.size)]), key=lambda a: a[1])]
+        inv_order = [
+            a[0]
+            for a in sorted(
+                enumerate([order[i] for i in range(order.size)]), key=lambda a: a[1]
+            )
+        ]
         # print(f"Backward inv_order: {inv_order}")
         return grad_output._new(grad_output._tensor.permute(*inv_order)), 0.0
 

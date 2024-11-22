@@ -273,9 +273,7 @@ def tensor_map(
         in_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 2.3.
-        in_index = np.zeros(
-            len(in_shape), dtype=np.int32
-        )  
+        in_index = np.zeros(len(in_shape), dtype=np.int32)
         out_index = np.zeros(len(out_shape), dtype=np.int32)
         for ordinal in range(int(operators.prod(out_shape))):
             to_index(ordinal, out_shape, out_index)
@@ -391,6 +389,7 @@ def tensor_reduce(
 
     return _reduce
 
+
 def simple_tensor_matrix_multiply(
     out: Storage,
     out_shape: Shape,
@@ -404,13 +403,17 @@ def simple_tensor_matrix_multiply(
 ) -> None:
     """Simplest version of matrix multiplication for debugging purposes."""
     # Ensure inner dimensions match
-    assert a_shape[-1] == b_shape[-2], "Inner dimensions must match for matrix multiplication"
+    assert (
+        a_shape[-1] == b_shape[-2]
+    ), "Inner dimensions must match for matrix multiplication"
 
     # Loop over the output batch, rows, and columns
     for batch in range(out_shape[0]):  # Batch dimension
         for i in range(out_shape[1]):  # Rows of output
             for j in range(out_shape[2]):  # Columns of output
-                out_idx = batch * out_strides[0] + i * out_strides[1] + j * out_strides[2]
+                out_idx = (
+                    batch * out_strides[0] + i * out_strides[1] + j * out_strides[2]
+                )
                 out[out_idx] = 0.0
                 for k in range(a_shape[-1]):  # Inner dimension
                     # Calculate indices for a and b

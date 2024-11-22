@@ -375,7 +375,7 @@ class Tensor:
             return Sum.apply(
                 self.contiguous().view(self.size),
                 self._ensure_tensor(0),
-            )   
+            )
         return Sum.apply(self, self._ensure_tensor(dim))
 
     def mean(self, dim: Optional[int] = None) -> Tensor:
