@@ -9,7 +9,7 @@ CudaBackend = minitorch.TensorBackend(minitorch.CudaOps)
 
 # Function to run matrix multiplication
 def execute_matmul(backend_type, matrix_dim):
-    batch_count = 16
+    batch_count = 2
     matrix_a = minitorch.rand((batch_count, matrix_dim, matrix_dim), backend=backend_type)
     matrix_b = minitorch.rand((batch_count, matrix_dim, matrix_dim), backend=backend_type)
     result = matrix_a @ matrix_b
@@ -41,6 +41,7 @@ def evaluate_performance():
         # Store average time for each backend
         timings["CPU"].append(np.mean(cpu_durations))
         timings["GPU"].append(np.mean(gpu_durations))
+        print(dim, ":", timings["CPU"][-1], timings["GPU"][-1])
 
     return dimensions, timings
 

@@ -351,6 +351,11 @@ Diagnostics output:
         Allocation hoisting:
         No allocation hoisting found
         None
+## Task 3.4
+Comparison of fast & cuda implementation:
+```
+!cd $DIR; PYTHONPATH=/content/$DIR python3.12 project/plot_time_mm.py
+```
 ## Task 3.5
 ### Split
 #### CPU
