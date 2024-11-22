@@ -442,6 +442,7 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
 
     # Compute the dot product for the result matrix
     if i < size and j < size:
+        # Initialize the accumulator for the dot product
         temp = 0.0
         # Multiply the corresponding elements of the row of `a` and the column of `b`
         # i.e. out[i, j] += a[i, k] * b[k, j]

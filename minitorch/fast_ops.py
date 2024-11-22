@@ -242,7 +242,7 @@ def tensor_zip(
             for ordinal in prange(len(out)):
                 a_index = np.empty(MAX_DIMS, dtype=np.int32)
                 b_index = np.empty(MAX_DIMS, dtype=np.int32)
-                out_index = np.zeros(len(out_shape), dtype=np.int32)
+                out_index = np.empty(MAX_DIMS, dtype=np.int32)
                 to_index(ordinal, out_shape, out_index)
                 broadcast_index(out_index, out_shape, a_shape, a_index)
                 broadcast_index(out_index, out_shape, b_shape, b_index)
